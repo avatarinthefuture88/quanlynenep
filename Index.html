@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Thư viện tạo file PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <!-- Thư viện Thông báo Popup đẹp mắt SweetAlert2 (Loại bỏ hoàn toàn thông báo nhúng mặc định của trình duyệt) -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <style>
+    body { background-color: #f0f2f5; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    .card-app { max-width: 540px; margin: 20px auto; border-radius: 22px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border: none; overflow: hidden; }
+    
+    .header-banner { 
+      background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); 
+      color: white; 
+      padding: 18px 20px; 
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    
+    .school-logo-clean { 
+      width: 76px; 
+      height: 76px; 
+      border-radius: 50%; 
+      object-fit: contain; 
+      filter: drop-shadow(0 4px 10px rgba(0,0,0,0.3));
+      flex-shrink: 0;
+      background: transparent;
+    }
+    
+    .header-text { flex-grow: 1; text-align: center; }
+    .header-title {
+      font-size: 1.6rem; 
+      font-weight: 800;
+      margin-bottom: 0;
+      line-height: 1.3;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.25);
+    }
+    
+    /* NAV TABS HIỆN ĐẠI */
+    .tab-nav-wrapper {
+      display: flex;
+      background: #e9ecef;
+      padding: 5px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 10px 5px;
+      border: none;
+      background: transparent;
+      font-weight: 700;
+      font-size: 13.5px;
+      border-radius: 9px;
+      color: #555;
+      transition: all 0.25s ease;
+      text-align: center;
+    }
+    .tab-btn.active {
+      background: #ffffff;
+      color: #1e3c72;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.12);
+    }
+
+    .btn-custom { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); border: none; color: white; font-weight: bold; border-radius: 12px; padding: 12px; font-size: 16px; }
+    .btn-pdf { background: linear-gradient(135deg, #e65c00 0%, #F9D423 100%); border: none; color: white; font-weight: bold; border-radius: 8px; }
+    .btn-tra-cuu { background: linear-gradient(135deg, #2b5876 0%, #4e4376 100%); border: none; color: white; font-weight: bold; border-radius: 12px; padding: 12px; font-size: 16px; }
+    .form-control, .form-select { border-radius: 10px; padding: 11px 15px; border: 1px solid #dce1e6; }
+    .pin-input { letter-spacing: 8px; font-size: 20px; text-align: center; font-weight: bold; }
+    .badge-diem { font-size: 14px; padding: 6px 12px; border-radius: 20px; }
+    .badge-user { background: #e8f0fe; color: #1e3c72; padding: 6px 12px; border-radius: 15px; font-weight: 600; font-size: 13px; }
+
+    /* CARD KẾT QUẢ PHỤ HUYNH */
+    .student-card {
+      background: #fdfdfd;
+      border-radius: 16px;
+      border: 1px solid #e2e8f0;
+      padding: 18px;
+    }
+    .score-circle {
+      width: 75px;
+      height: 75px;
+      border-radius: 50%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      color: white;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+      flex-shrink: 0;
+    }
+    .score-circle.good { background: linear-gradient(135deg, #11998e, #38ef7d); }
+    .score-circle.fair { background: linear-gradient(135deg, #f7971e, #ffd200); }
+    .score-circle.warning { background: linear-gradient(135deg, #cb2d3e, #ef473a); }
+    
+    /* KHU VỰC IN PDF: MẶC ĐỊNH ẨN, CHỈ HIỆN KHI CHỤP XUẤT FILE */
+    #mauInPDF, #mauInPDFCaNhan {
+      display: none;
+      width: 100%;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 15px 20px;
+      background: #ffffff;
+      color: #000000;
+      font-family: 'Times New Roman', Times, serif;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ==================== KHUNG TRANG IN PDF TỔNG HỢP CẢ LỚP ==================== -->
+<div id="mauInPDF">
+  <table style="width: 100%; border: none; border-collapse: collapse; margin-bottom: 22px;">
+    <tr>
+      <td style="width: 50%; text-align: center; vertical-align: top; border: none; padding: 0;">
+        <div style="font-size: 13px; font-weight: bold; text-transform: uppercase; color: #000;">TRƯỜNG THPT PHAN CHU TRINH - CƯ JÚT</div>
+        <div style="font-size: 13.5px; font-weight: bold; color: #1e3c72; margin-top: 3px;">CHI ĐOÀN LỚP 10A5</div>
+        <div style="width: 130px; height: 1.5px; background: #000; margin: 5px auto 0;"></div>
+      </td>
+      <td style="width: 50%; text-align: center; vertical-align: top; border: none; padding: 0;">
+        <div style="font-size: 13px; font-weight: bold; text-transform: uppercase; color: #000;">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+        <div style="font-size: 12.5px; font-style: italic; font-weight: bold; color: #000; margin-top: 2px;">Độc lập - Tự do - Hạnh phúc</div>
+        <div style="width: 150px; height: 1.5px; background: #000; margin: 5px auto 0;"></div>
+      </td>
+    </tr>
+  </table>
+
+  <div style="text-align: center; margin-bottom: 20px;">
+    <div style="font-size: 17px; font-weight: bold; text-transform: uppercase; color: #000; letter-spacing: 0.3px; white-space: nowrap;">
+      BẢNG TỔNG HỢP THEO DÕI NỀ NẾP HỌC SINH
+    </div>
+    <div id="pdfTieuDeTuan" style="font-size: 15px; font-weight: bold; margin-top: 5px; color: #1e3c72; text-transform: uppercase;">
+      TUẦN 1
+    </div>
+    <div style="font-size: 11.5px; font-style: italic; color: #555; margin-top: 3px;">
+      (Dữ liệu công khai phục vụ tiết sinh hoạt lớp và lưu trữ hồ sơ nề nếp)
+    </div>
+  </div>
+
+  <table style="width: 100%; border-collapse: collapse; font-size: 12.5px; color: #000;">
+    <thead>
+      <tr style="background-color: #f2f4f8; text-align: center; font-weight: bold;">
+        <th style="border: 1px solid #333; padding: 8px 4px; width: 5%;">STT</th>
+        <th style="border: 1px solid #333; padding: 8px 4px; width: 17%;">Thời gian</th>
+        <th style="border: 1px solid #333; padding: 8px 4px; width: 9%;">Tổ</th>
+        <th style="border: 1px solid #333; padding: 8px 8px; width: 22%;">Họ và tên học sinh</th>
+        <th style="border: 1px solid #333; padding: 8px 8px; width: 25%;">Hành vi / Nội dung</th>
+        <th style="border: 1px solid #333; padding: 8px 4px; width: 8%;">Điểm</th>
+        <th style="border: 1px solid #333; padding: 8px 6px; width: 14%;">Ghi chú</th>
+      </tr>
+    </thead>
+    <tbody id="pdfNoiDungBang"></tbody>
+  </table>
+
+  <table style="width: 100%; border: none; border-collapse: collapse; margin-top: 15px; font-size: 11.5px; color: #555; font-style: italic;">
+    <tr>
+      <td style="border: none; text-align: left; padding: 0;">* Sổ nề nếp điện tử 10A5 - THPT Phan Chu Trinh - Cư Jút</td>
+      <td id="pdfNgayXuat" style="border: none; text-align: right; padding: 0;"></td>
+    </tr>
+  </table>
+</div>
+
+
+
+<!-- ==================== GIAO DIỆN ỨNG DỤNG CHÍNH ==================== -->
+<div class="container pb-4">
+  <div class="card card-app">
+    
+    <!-- HEADER APP -->
+    <div class="header-banner">
+      <img src="https://lh3.googleusercontent.com/d/1-HL3XocLUbHU5yszn1YpT9ih6VvfIzxM" 
+           alt="Logo Trường" 
+           class="school-logo-clean"
+           onerror="this.src='https://cdn-icons-png.flaticon.com/512/2997/2997295.png'">
+      <div class="header-text">
+        <h1 class="header-title">
+          SỔ THEO DÕI NỀ NẾP LỚP 10A5 <i class="fa-solid fa-graduation-cap ms-1 text-warning"></i>
+        </h1>
+      </div>
+    </div>
+
+    <div class="p-3 bg-white pb-0">
+      <!-- THANH CHUYỂN CHẾ ĐỘ: PHỤ HUYNH HOẶC CÁN SỰ & GVCN -->
+      <div class="tab-nav-wrapper">
+        <button class="tab-btn active" id="tabBtnPhuHuynh" onclick="chuyenTab('phuHuynh')">
+          <i class="fa-solid fa-user-group me-1"></i> PHỤ HUYNH TRA CỨU
+        </button>
+        <button class="tab-btn" id="tabBtnCanSu" onclick="chuyenTab('canSu')">
+          <i class="fa-solid fa-shield-halved me-1"></i> CÁN SỰ & GVCN
+        </button>
+      </div>
+    </div>
+
+    <!-- ==================== KHU VỰC 1: PHỤ HUYNH TRA CỨU BẢO MẬT (MẶC ĐỊNH MỞ) ==================== -->
+    <div id="khuVucPhuHuynh">
+      
+      <!-- FORM TRA CỨU -->
+      <div id="manHinhTraCuu" class="card-body p-4 pt-1 bg-white">
+        <div class="text-center mb-3">
+          <div class="text-primary mb-1">
+            <i class="fa-solid fa-user-lock fa-2x"></i>
+          </div>
+          <h6 class="fw-bold text-dark mb-1">TRA CỨU NỀ NẾP BẢO MẬT</h6>
+          <p class="text-muted small">Phụ huynh nhập Họ tên và chọn Ngày sinh của con để xem kết quả</p>
+        </div>
+
+        <form id="formTraCuuPH" onsubmit="xuLyTraCuuPhuHuynh(event)">
+          <!-- HỌ VÀ TÊN -->
+          <div class="mb-3">
+            <label class="form-label fw-bold text-secondary small">
+              <i class="fa-solid fa-user me-1 text-primary"></i> HỌ VÀ TÊN HỌC SINH
+            </label>
+            <input type="text" class="form-control" id="phHoTen" placeholder="Ví dụ: Nguyễn Văn An" required autocomplete="off">
+          </div>
+
+          <!-- NGÀY THÁNG NĂM SINH (3 DROPDOWN DỄ CHỌN NHẤT CHO PHỤ HUYNH) -->
+          <div class="mb-3">
+            <label class="form-label fw-bold text-secondary small">
+              <i class="fa-regular fa-calendar-days me-1 text-primary"></i> NGÀY THÁNG NĂM SINH CỦA CON
+            </label>
+            <div class="row g-2">
+              <div class="col-4">
+                <select class="form-select text-center" id="phNgay" required>
+                  <option value="">Ngày</option>
+                </select>
+              </div>
+              <div class="col-4">
+                <select class="form-select text-center" id="phThang" required>
+                  <option value="">Tháng</option>
+                </select>
+              </div>
+              <div class="col-4">
+                <select class="form-select text-center" id="phNam" required>
+                  <option value="">Năm</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-text text-muted small mt-1">
+              <i class="fa-solid fa-lock me-1"></i>Bảo vệ thông tin cá nhân theo Luật Trẻ em
+            </div>
+          </div>
+
+          <!-- CHỌN TUẦN -->
+          <div class="mb-4">
+            <label class="form-label fw-bold text-secondary small">
+              <i class="fa-regular fa-clock me-1 text-primary"></i> CHỌN TUẦN CẦN XEM
+            </label>
+            <select class="form-select" id="phTuan">
+              <option value="all">🌟 Toàn bộ học kỳ 1</option>
+            </select>
+          </div>
+
+          <button type="submit" id="btnTraCuu" class="btn btn-tra-cuu w-100 shadow-sm">
+            <i class="fa-solid fa-magnifying-glass me-2"></i>XEM KẾT QUẢ NỀ NẾP
+          </button>
+        </form>
+      </div>
+
+      <!-- MÀN HÌNH KẾT QUẢ CHO PHỤ HUYNH -->
+      <div id="manHinhKetQuaPH" class="card-body p-4 pt-1 bg-white" style="display: none;">
+        
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <button class="btn btn-sm btn-outline-secondary" onclick="quayLaiTraCuu()">
+            <i class="fa-solid fa-arrow-left me-1"></i> Tra cứu lại
+          </button>
+          <span class="badge bg-primary-subtle text-primary fw-bold" id="badgeTuanHienThi">Tuần 1</span>
+        </div>
+
+        <!-- Thẻ thông tin học sinh -->
+        <div class="student-card mb-3">
+          <div>
+            <h5 class="fw-bold text-dark mb-1" id="resHoTen">Nguyễn Văn An</h5>
+            <div class="text-muted small">
+              <span>Lớp 10A5</span> • <span id="resTo">Tổ 1</span>
+            </div>
+            <div class="text-muted small mt-1">
+              <i class="fa-regular fa-calendar me-1"></i> Ngày sinh: <span id="resNgaySinh">15/08/2008</span>
+            </div>
+          </div>
+
+          <hr class="my-3 opacity-25">
+
+          <div class="d-flex justify-content-between align-items-center text-center">
+            <div class="flex-fill border-end">
+              <div class="text-muted small">Điểm cộng (Khen thưởng)</div>
+              <div class="fw-bold text-success fs-5" id="resDiemCong">+0</div>
+            </div>
+            <div class="flex-fill">
+              <div class="text-muted small">Điểm trừ (Vi phạm)</div>
+              <div class="fw-bold text-danger fs-5" id="resDiemTru">-0</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CHI TIẾT CÁC LẦN GHI NHẬN NỀ NẾP -->
+        <div class="mb-3">
+          <div class="fw-bold text-dark small mb-2">
+            <i class="fa-solid fa-list-check me-1 text-primary"></i> Nhật ký nề nếp chi tiết:
+          </div>
+          <div id="resDanhSachNhatKy"></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ==================== KHU VỰC 2: CÁN SỰ & GVCN (MẶC ĐỊNH ẨN) ==================== -->
+    <div id="khuVucCanSu" style="display: none;">
+      <!-- MÀN HÌNH 1: ĐĂNG NHẬP MÃ PIN -->
+      <div id="manHinhDangNhap" class="card-body p-4 pt-1 bg-white">
+        <div class="text-center mb-3">
+          <h6 class="fw-bold text-dark mb-1">XÁC THỰC QUYỀN HẠN</h6>
+          <p class="text-muted small">Dành cho Tổ trưởng 1-4, Cán sự lớp và Giáo viên chủ nhiệm</p>
+        </div>
+
+        <form id="formLogin" onsubmit="xuLyDangNhap(event)">
+          <div class="mb-3">
+            <label class="form-label fw-bold text-secondary small">VAI TRÒ CỦA BẠN</label>
+            <select class="form-select" id="loginVaiTro" required>
+              <option value="1">Tổ trưởng Tổ 1</option>
+              <option value="2">Tổ trưởng Tổ 2</option>
+              <option value="3">Tổ trưởng Tổ 3</option>
+              <option value="4">Tổ trưởng Tổ 4</option>
+              <option value="all">Lớp trưởng / Lớp phó / GVCN</option>
+            </select>
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label fw-bold text-secondary small">MÃ PIN BẢO MẬT (4 SỐ)</label>
+            <input type="password" class="form-control pin-input" id="loginPIN" maxlength="4" placeholder="••••" required>
+          </div>
+
+          <button type="submit" id="btnLogin" class="btn btn-custom w-100 shadow-sm">
+            <i class="fa-solid fa-right-to-bracket me-2"></i>ĐĂNG NHẬP
+          </button>
+        </form>
+      </div>
+
+      <!-- MÀN HÌNH 2: NHẬP BÁO CÁO NỀ NẾP -->
+      <div id="manHinhNhapLoi" class="card-body p-4 pt-1 bg-white" style="display: none;">
+        <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+          <span class="badge-user">
+            <i class="fa-solid fa-circle-user me-1"></i> <span id="txtUser">Tổ trưởng</span>
+          </span>
+          <button type="button" class="btn btn-sm btn-outline-danger" onclick="dangXuat()">
+            <i class="fa-solid fa-arrow-right-from-bracket me-1"></i>Đăng xuất
+          </button>
+        </div>
+
+        <form id="formNeNep" onsubmit="xuLyGuiBaoCao(event)">
+          <div class="mb-3">
+            <label class="form-label fw-bold text-secondary small"><i class="fa-regular fa-calendar-check me-1"></i> TUẦN HỌC (HK1)</label>
+            <select class="form-select" id="tuan" required></select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold text-secondary small"><i class="fa-solid fa-user me-1"></i> HỌC SINH GHI NHẬN</label>
+            <select class="form-select" id="hocSinh" required>
+              <option value="">-- Đang tải danh sách... --</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold text-secondary small"><i class="fa-solid fa-list-check me-1"></i> HÀNH VI / NỘI DUNG</label>
+            <select class="form-select" id="hanhVi" onchange="capNhatDiem()" required>
+              <option value="">-- Chọn hành vi --</option>
+            </select>
+          </div>
+
+          <div class="mb-3 p-3 bg-light rounded-3 d-flex justify-content-between align-items-center">
+            <span class="fw-bold text-secondary small">Điểm thay đổi:</span>
+            <span id="badgeDiem" class="badge bg-secondary badge-diem">0 điểm</span>
+            <input type="hidden" id="diemSo" value="0">
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label fw-bold text-secondary small"><i class="fa-regular fa-comment-dots me-1"></i> GHI CHÚ THÊM</label>
+            <input type="text" class="form-control" id="ghiChu" placeholder="Ví dụ: Tiết 2 môn Hóa...">
+          </div>
+
+          <button type="submit" id="btnSubmit" class="btn btn-custom w-100 shadow-sm">
+            <i class="fa-solid fa-paper-plane me-2"></i>GỬI BÁO CÁO
+          </button>
+        </form>
+
+        <!-- XUẤT SỔ THEO DÕI CHO GVCN & CÁN SỰ -->
+        <div id="khuVucAdmin" class="mt-4 pt-3 border-top" style="display: none;">
+          <div class="fw-bold text-secondary small mb-2">
+            <i class="fa-solid fa-file-pdf text-danger me-1"></i> XUẤT SỔ THEO DÕI
+          </div>
+          <div class="input-group">
+            <select class="form-select" id="tuanXuatPDF"></select>
+            <button class="btn btn-pdf px-3" type="button" onclick="xuatBaoCaoPDF()">
+              <i class="fa-solid fa-download me-1"></i> Tải PDF
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  let duLieuTong = { dsHocSinh: [], dsHanhVi: [] };
+  let nguoiDungHienTai = null;
+  let duLieuTraCuuHienTai = null;
+
+  // ==================== CÁC HÀM HIỂN THỊ THÔNG BÁO NỘI BỘ (KHÔNG BỊ HIỆN TÊN TRANG NHÚNG) ====================
+  function thongBaoLoi(noiDung) {
+    // Tự động làm sạch tiền tố biểu tượng nếu có
+    const textClean = (noiDung || "").replace(/^[❌❗⚠️\s]+/, '');
+    Swal.fire({
+      icon: 'error',
+      title: 'Lỗi',
+      text: textClean,
+      confirmButtonColor: '#1e3c72',
+      confirmButtonText: 'Đồng ý'
+    });
+  }
+
+  function thongBaoCanhBao(noiDung) {
+    const textClean = (noiDung || "").replace(/^[❌❗⚠️\s]+/, '');
+    Swal.fire({
+      icon: 'warning',
+      title: 'Chú ý',
+      text: textClean,
+      confirmButtonColor: '#1e3c72',
+      confirmButtonText: 'Đồng ý'
+    });
+  }
+
+  function thongBaoThanhCong(noiDung) {
+    const textClean = (noiDung || "").replace(/^[✅🌟\s]+/, '');
+    Swal.fire({
+      icon: 'success',
+      title: 'Thành công',
+      text: textClean,
+      confirmButtonColor: '#11998e',
+      confirmButtonText: 'Đồng ý'
+    });
+  }
+
+  // ==================== KHỞI TẠO DỮ LIỆU BAN ĐẦU ====================
+  window.onload = function() {
+    const selectTuan = document.getElementById("tuan");
+    const selectTuanPDF = document.getElementById("tuanXuatPDF");
+    const selectTuanPH = document.getElementById("phTuan");
+
+    selectTuan.innerHTML = "";
+    selectTuanPDF.innerHTML = "";
+    selectTuanPH.innerHTML = '<option value="all">🌟 Toàn bộ học kỳ 1</option>';
+
+    for (let i = 1; i <= 18; i++) {
+      selectTuan.innerHTML += `<option value="Tuần ${i}">Tuần ${i}</option>`;
+      selectTuanPDF.innerHTML += `<option value="Tuần ${i}">Tuần ${i}</option>`;
+      selectTuanPH.innerHTML += `<option value="Tuần ${i}">Tuần ${i}</option>`;
+    }
+
+    // 1. Tạo 31 ngày
+    const selNgay = document.getElementById("phNgay");
+    selNgay.innerHTML = '<option value="">Ngày</option>';
+    for (let d = 1; d <= 31; d++) {
+      const dStr = d < 10 ? '0' + d : '' + d;
+      selNgay.innerHTML += `<option value="${dStr}">${d}</option>`;
+    }
+
+    // 2. Tạo 12 tháng
+    const selThang = document.getElementById("phThang");
+    selThang.innerHTML = '<option value="">Tháng</option>';
+    for (let m = 1; m <= 12; m++) {
+      const mStr = m < 10 ? '0' + m : '' + m;
+      selThang.innerHTML += `<option value="${mStr}">Tháng ${m}</option>`;
+    }
+
+    // 3. Tạo các năm sinh phù hợp với học sinh THPT (từ 2004 đến 2012)
+    const selNam = document.getElementById("phNam");
+    selNam.innerHTML = '<option value="">Năm</option>';
+    for (let y = 2012; y >= 2004; y--) {
+      // Ưu tiên chọn sẵn năm 2008 cho lứa học sinh lớp 10 hiện tại
+      const isSelected = (y === 2008) ? 'selected' : '';
+      selNam.innerHTML += `<option value="${y}" ${isSelected}>${y}</option>`;
+    }
+
+    google.script.run.withSuccessHandler(function(data) {
+      duLieuTong = data;
+      napDanhSachHanhVi();
+    }).layDuLieuKhoiTao();
+  };
+
+  function chuyenTab(tab) {
+    const btnCanSu = document.getElementById("tabBtnCanSu");
+    const btnPhuHuynh = document.getElementById("tabBtnPhuHuynh");
+    const khuVucCanSu = document.getElementById("khuVucCanSu");
+    const khuVucPhuHuynh = document.getElementById("khuVucPhuHuynh");
+
+    if (tab === 'canSu') {
+      btnCanSu.classList.add("active");
+      btnPhuHuynh.classList.remove("active");
+      khuVucCanSu.style.display = "block";
+      khuVucPhuHuynh.style.display = "none";
+    } else {
+      btnPhuHuynh.classList.add("active");
+      btnCanSu.classList.remove("active");
+      khuVucCanSu.style.display = "none";
+      khuVucPhuHuynh.style.display = "block";
+    }
+  }
+
+  function napDanhSachHanhVi() {
+    const selectHV = document.getElementById("hanhVi");
+    selectHV.innerHTML = '<option value="">-- Chọn hành vi --</option>';
+    duLieuTong.dsHanhVi.forEach(hv => {
+      selectHV.innerHTML += `<option value="${hv.tenHV}" data-diem="${hv.diem}">[${hv.loai}] ${hv.tenHV}</option>`;
+    });
+  }
+
+  // ==================== CÁN SỰ & GVCN ====================
+  function xuLyDangNhap(e) {
+    e.preventDefault();
+    const vaiTro = document.getElementById("loginVaiTro").value;
+    const maPIN = document.getElementById("loginPIN").value;
+    const btn = document.getElementById("btnLogin");
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i>Đang xác thực...';
+
+    google.script.run
+      .withSuccessHandler(function(res) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-right-to-bracket me-2"></i>ĐĂNG NHẬP';
+
+        const hopLe = res && (res.success === true || res.thanhCong === true);
+        if (hopLe) {
+          nguoiDungHienTai = res;
+          document.getElementById("txtUser").innerText = res.tenVaiTro || "Người dùng";
+          locHocSinhTheoVaiTro(res.vaiTro);
+
+          if (res.vaiTro === "all" || (res.tenVaiTro && (res.tenVaiTro.indexOf("GVCN") !== -1 || res.tenVaiTro.indexOf("Lớp trưởng") !== -1))) {
+            document.getElementById("khuVucAdmin").style.display = "block";
+          } else {
+            document.getElementById("khuVucAdmin").style.display = "none";
+          }
+
+          document.getElementById("manHinhDangNhap").style.display = "none";
+          document.getElementById("manHinhNhapLoi").style.display = "block";
+        } else {
+          const thongBao = (res && (res.message || res.thongBao)) || "Sai Mã PIN! Vui lòng kiểm tra lại.";
+          thongBaoLoi(thongBao);
+          document.getElementById("loginPIN").value = "";
+          document.getElementById("loginPIN").focus();
+        }
+      })
+      .withFailureHandler(function(err) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-right-to-bracket me-2"></i>ĐĂNG NHẬP';
+        thongBaoLoi("Lỗi kết nối máy chủ: " + (err.message || err));
+      })
+      .kiemTraDangNhap(vaiTro, maPIN);
+  }
+
+  function locHocSinhTheoVaiTro(vaiTro) {
+    const selectHS = document.getElementById("hocSinh");
+    selectHS.innerHTML = '<option value="">-- Chọn học sinh --</option>';
+    duLieuTong.dsHocSinh.forEach(hs => {
+      if (vaiTro === "all" || hs.to == vaiTro) {
+        selectHS.innerHTML += `<option value="${hs.hoTen}">${hs.hoTen} (Tổ ${hs.to})</option>`;
+      }
+    });
+  }
+
+  function capNhatDiem() {
+    const selectHV = document.getElementById("hanhVi");
+    const option = selectHV.options[selectHV.selectedIndex];
+    const diem = option ? (option.getAttribute("data-diem") || 0) : 0;
+    
+    document.getElementById("diemSo").value = diem;
+    const badge = document.getElementById("badgeDiem");
+    badge.innerText = (diem > 0 ? "+" : "") + diem + " điểm";
+    badge.className = diem > 0 ? "badge bg-success badge-diem" : (diem < 0 ? "badge bg-danger badge-diem" : "badge bg-secondary badge-diem");
+  }
+
+  function xuLyGuiBaoCao(e) {
+    e.preventDefault();
+    const btn = document.getElementById("btnSubmit");
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i>Đang lưu...';
+
+    const duLieu = {
+      tuan: document.getElementById("tuan").value,
+      hocSinh: document.getElementById("hocSinh").value,
+      hanhVi: document.getElementById("hanhVi").value,
+      diem: document.getElementById("diemSo").value,
+      ghiChu: document.getElementById("ghiChu").value,
+      nguoiBaoCao: nguoiDungHienTai.tenVaiTro
+    };
+
+    google.script.run
+      .withSuccessHandler(function(res) {
+        const hopLe = res && (res.success === true || res.thanhCong === true);
+        const thongBao = (res && (res.message || res.thongBao)) || "Đã lưu báo cáo nề nếp thành công!";
+        if (hopLe) {
+          thongBaoThanhCong(thongBao);
+          document.getElementById("ghiChu").value = "";
+        } else {
+          thongBaoLoi(thongBao);
+        }
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-paper-plane me-2"></i>GỬI BÁO CÁO';
+      })
+      .withFailureHandler(function(err) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-paper-plane me-2"></i>GỬI BÁO CÁO';
+        thongBaoLoi("Lỗi lưu dữ liệu: " + (err.message || err));
+      })
+      .luuBaoCao(duLieu);
+  }
+
+  function dangXuat() {
+    nguoiDungHienTai = null;
+    document.getElementById("loginPIN").value = "";
+    document.getElementById("manHinhNhapLoi").style.display = "none";
+    document.getElementById("manHinhDangNhap").style.display = "block";
+  }
+
+  // ==================== PHỤ HUYNH TRA CỨU BẢO MẬT ====================
+  function xuLyTraCuuPhuHuynh(e) {
+    e.preventDefault();
+    const hoTen = document.getElementById("phHoTen").value.trim();
+    const ngay = document.getElementById("phNgay").value;
+    const thang = document.getElementById("phThang").value;
+    const nam = document.getElementById("phNam").value;
+    const tuan = document.getElementById("phTuan").value;
+    const btn = document.getElementById("btnTraCuu");
+
+    if (!hoTen) {
+      thongBaoCanhBao("Vui lòng nhập Họ và tên của học sinh!");
+      return;
+    }
+    if (!ngay || !thang || !nam) {
+      thongBaoCanhBao("Vui lòng chọn đầy đủ Ngày, Tháng và Năm sinh của con!");
+      return;
+    }
+
+    const ngaySinh = `${ngay}/${thang}/${nam}`;
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i>Đang kiểm tra hồ sơ...';
+
+    google.script.run
+      .withSuccessHandler(function(res) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-magnifying-glass me-2"></i>XEM KẾT QUẢ NỀ NẾP';
+
+        const hopLe = res && (res.success === true || res.thanhCong === true);
+        if (hopLe) {
+          duLieuTraCuuHienTai = res;
+          hienThiKetQuaPhuHuynh(res);
+        } else {
+          const thongBao = (res && (res.message || res.thongBao)) || "Thông tin không khớp! Không tìm thấy học sinh với Họ tên và Ngày sinh đã chọn.";
+          thongBaoLoi(thongBao);
+        }
+      })
+      .withFailureHandler(function(err) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-magnifying-glass me-2"></i>XEM KẾT QUẢ NỀ NẾP';
+        thongBaoLoi("Lỗi kết nối máy chủ: " + (err.message || err));
+      })
+      .traCuuPhuHuynh(hoTen, ngaySinh, tuan);
+  }
+
+  function hienThiKetQuaPhuHuynh(res) {
+    document.getElementById("resHoTen").innerText = res.hocSinh.hoTen;
+    document.getElementById("resTo").innerText = res.hocSinh.to || "Lớp 10A5";
+    document.getElementById("resNgaySinh").innerText = res.hocSinh.ngaySinh || "-";
+    document.getElementById("badgeTuanHienThi").innerText = res.tuan;
+    
+    document.getElementById("resDiemCong").innerText = (res.tongCong > 0 ? "+" : "") + res.tongCong;
+    document.getElementById("resDiemTru").innerText = (res.tongTru > 0 ? "-" : "") + res.tongTru;
+
+    const boxNK = document.getElementById("resDanhSachNhatKy");
+    boxNK.innerHTML = "";
+
+    if (!res.danhSach || res.danhSach.length === 0) {
+      boxNK.innerHTML = `
+        <div class="alert alert-success d-flex align-items-center mb-0" role="alert">
+          <i class="fa-solid fa-circle-check fs-4 me-2"></i>
+          <div>
+            <strong>Rất đáng khen!</strong> Trong tuần này em chấp hành rất tốt nội quy, không có ghi nhận vi phạm nào.
+          </div>
+        </div>
+      `;
+    } else {
+      res.danhSach.forEach((item, index) => {
+        const diemNum = Number(item.diem) || 0;
+        const diemBadge = diemNum > 0 ? 
+          `<span class="badge bg-success">+${diemNum}đ</span>` : 
+          `<span class="badge bg-danger">${diemNum}đ</span>`;
+        
+        boxNK.innerHTML += `
+          <div class="p-2 mb-2 bg-light rounded border d-flex justify-content-between align-items-center">
+            <div>
+              <div class="fw-bold small text-dark">${item.hanhVi}</div>
+              <div class="text-muted" style="font-size: 11px;">
+                <i class="fa-regular fa-clock me-1"></i>${item.thoiGian} • ${item.tuan} ${item.ghiChu ? (' • <em>' + item.ghiChu + '</em>') : ''}
+              </div>
+            </div>
+            <div>${diemBadge}</div>
+          </div>
+        `;
+      });
+    }
+
+    document.getElementById("manHinhTraCuu").style.display = "none";
+    document.getElementById("manHinhKetQuaPH").style.display = "block";
+  }
+
+  function quayLaiTraCuu() {
+    document.getElementById("manHinhKetQuaPH").style.display = "none";
+    document.getElementById("manHinhTraCuu").style.display = "block";
+  }
+
+  // ==================== XUẤT FILE PDF TỔNG HỢP (GVCN) ====================
+  function xuatBaoCaoPDF() {
+    const tuanChon = document.getElementById("tuanXuatPDF").value;
+    const btn = document.querySelector("#khuVucAdmin button");
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Đang tải...';
+    }
+    
+    google.script.run
+      .withSuccessHandler(function(res) {
+        const hopLe = res && (res.success === true || res.thanhCong === true);
+        const danhSach = res && res.danhSach ? res.danhSach : (Array.isArray(res) ? res : []);
+        
+        if (!hopLe && res && (res.message || res.thongBao)) {
+          if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-download me-1"></i> Tải PDF'; }
+          thongBaoLoi(res.message || res.thongBao);
+          return;
+        }
+        if (danhSach.length === 0) {
+          if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-download me-1"></i> Tải PDF'; }
+          thongBaoCanhBao(tuanChon + " hiện tại chưa có dữ liệu vi phạm hay khen thưởng nào!");
+          return;
+        }
+
+        document.getElementById("pdfTieuDeTuan").innerText = tuanChon.toUpperCase();
+        
+        const now = new Date();
+        const strNgay = `Ngày xuất: ${now.toLocaleTimeString('vi-VN')} - ${now.toLocaleDateString('vi-VN')}`;
+        const lblNgay = document.getElementById("pdfNgayXuat");
+        if (lblNgay) lblNgay.innerText = strNgay;
+
+        const tbody = document.getElementById("pdfNoiDungBang");
+        tbody.innerHTML = "";
+        
+        danhSach.forEach((item, index) => {
+          const diemNum = Number(item.diem) || 0;
+          const diemText = diemNum > 0 ? `+${diemNum}` : `${diemNum}`;
+          const colorDiem = diemNum > 0 ? "color: #1b5e20; font-weight: bold;" : (diemNum < 0 ? "color: #b71c1c; font-weight: bold;" : "color: #333;");
+          const rowBg = index % 2 === 1 ? "background-color: #fafbfc;" : "background-color: #ffffff;";
+          tbody.innerHTML += `
+            <tr style="${rowBg}">
+              <td style="border: 1px solid #555; padding: 6px 4px; text-align: center;">${index + 1}</td>
+              <td style="border: 1px solid #555; padding: 6px 4px; font-size: 11.5px; text-align: center;">${item.thoiGian}</td>
+              <td style="border: 1px solid #555; padding: 6px 4px; text-align: center; font-weight: bold; color: #1e3c72;">${item.to || "-"}</td>
+              <td style="border: 1px solid #555; padding: 6px 8px; font-weight: bold;">${item.hocSinh}</td>
+              <td style="border: 1px solid #555; padding: 6px 8px;">${item.hanhVi}</td>
+              <td style="border: 1px solid #555; padding: 6px 4px; text-align: center; ${colorDiem}">${diemText}</td>
+              <td style="border: 1px solid #555; padding: 6px 6px; font-size: 11px; font-style: italic;">${item.ghiChu || "-"}</td>
+            </tr>
+          `;
+        });
+
+        const element = document.getElementById("mauInPDF");
+        const appBox = document.querySelector(".container");
+
+        if (appBox) appBox.style.display = "none";
+        element.style.display = "block";
+        window.scrollTo(0, 0);
+
+        const opt = {
+          margin:       [10, 10, 10, 10],
+          filename:     `Bang_Ne_Nep_10A5_${tuanChon.replace(/\s+/g, '_')}.pdf`,
+          image:        { type: 'jpeg', quality: 0.98 },
+          html2canvas:  { scale: 2, scrollY: 0, scrollX: 0, useCORS: true },
+          jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+          pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
+        };
+
+        setTimeout(function() {
+          html2pdf().set(opt).from(element).save().then(function() {
+            element.style.display = "none";
+            if (appBox) appBox.style.display = "block";
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-download me-1"></i> Tải PDF'; }
+          }).catch(function(err) {
+            element.style.display = "none";
+            if (appBox) appBox.style.display = "block";
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-download me-1"></i> Tải PDF'; }
+            thongBaoLoi("Lỗi xuất PDF: " + err);
+          });
+        }, 200);
+
+      })
+      .withFailureHandler(function(err) {
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-download me-1"></i> Tải PDF'; }
+        thongBaoLoi("Lỗi kết nối máy chủ: " + (err.message || err));
+      })
+      .layDuLieuTheoTuan(tuanChon);
+  }
+
+</script>
+</body>
+</html>
